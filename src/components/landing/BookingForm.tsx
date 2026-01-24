@@ -15,9 +15,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const services = [
-  { value: "basic", label: "Basic Wash", price: 30 },
-  { value: "premium", label: "Premium Detail", price: 80 },
-  { value: "ceramic", label: "Ceramic Coating", price: 300 },
+  { value: "basic", label: "基本洗車", price: 500 },
+  { value: "premium", label: "精緻美容", price: 1500 },
+  { value: "ceramic", label: "鍍膜服務", price: 6000 },
 ];
 
 const BookingForm = () => {
@@ -37,8 +37,8 @@ const BookingForm = () => {
     
     if (!formData.name || !formData.phone || !formData.date || !formData.time || !formData.service) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all fields",
+        title: "資料不完整",
+        description: "請填寫所有欄位",
         variant: "destructive",
       });
       return;
@@ -65,8 +65,8 @@ const BookingForm = () => {
     } catch (error) {
       console.error("Booking error:", error);
       toast({
-        title: "Booking Failed",
-        description: "Please try again later",
+        title: "預約失敗",
+        description: "請稍後再試",
         variant: "destructive",
       });
     } finally {
@@ -100,8 +100,8 @@ const BookingForm = () => {
             >
               <CheckCircle className="w-10 h-10 text-white" />
             </motion.div>
-            <h3 className="font-heading text-2xl font-bold mb-2">Booking Confirmed!</h3>
-            <p className="text-muted-foreground">We'll contact you shortly to confirm your appointment.</p>
+            <h3 className="font-heading text-2xl font-bold mb-2">預約成功！</h3>
+            <p className="text-muted-foreground">我們將盡快與您聯繫確認預約詳情。</p>
           </motion.div>
         ) : (
           <motion.form
@@ -113,19 +113,19 @@ const BookingForm = () => {
             className="space-y-5"
           >
             <div className="text-center mb-6">
-              <h3 className="font-heading text-2xl font-bold mb-1">Book Your Wash</h3>
-              <p className="text-muted-foreground text-sm">Schedule in under 60 seconds</p>
+              <h3 className="font-heading text-2xl font-bold mb-1">線上預約</h3>
+              <p className="text-muted-foreground text-sm">60 秒快速預約</p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-medium">
-                Full Name
+                姓名
               </Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="name"
-                  placeholder="John Doe"
+                  placeholder="王小明"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="pl-10 h-12 bg-white/5 border-white/10 focus:border-primary"
@@ -135,14 +135,14 @@ const BookingForm = () => {
 
             <div className="space-y-2">
               <Label htmlFor="phone" className="text-sm font-medium">
-                Phone Number
+                電話號碼
               </Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="+1 (555) 000-0000"
+                  placeholder="0912-345-678"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="pl-10 h-12 bg-white/5 border-white/10 focus:border-primary"
@@ -153,7 +153,7 @@ const BookingForm = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date" className="text-sm font-medium">
-                  Date
+                  日期
                 </Label>
                 <div className="relative">
                   <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -170,7 +170,7 @@ const BookingForm = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="time" className="text-sm font-medium">
-                  Time
+                  時間
                 </Label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -187,7 +187,7 @@ const BookingForm = () => {
 
             <div className="space-y-2">
               <Label htmlFor="service" className="text-sm font-medium">
-                Service Type
+                服務項目
               </Label>
               <Select
                 value={formData.service}
@@ -196,7 +196,7 @@ const BookingForm = () => {
                 <SelectTrigger className="h-12 bg-white/5 border-white/10 focus:border-primary">
                   <div className="flex items-center gap-2">
                     <Car className="w-4 h-4 text-muted-foreground" />
-                    <SelectValue placeholder="Select a service" />
+                    <SelectValue placeholder="請選擇服務" />
                   </div>
                 </SelectTrigger>
                 <SelectContent className="glass border-white/10">
@@ -204,7 +204,7 @@ const BookingForm = () => {
                     <SelectItem key={service.value} value={service.value}>
                       <span className="flex items-center justify-between w-full gap-4">
                         <span>{service.label}</span>
-                        <span className="text-primary font-semibold">${service.price}</span>
+                        <span className="text-primary font-semibold">NT${service.price}</span>
                       </span>
                     </SelectItem>
                   ))}
@@ -219,9 +219,9 @@ const BookingForm = () => {
                 className="p-4 rounded-xl bg-primary/10 border border-primary/20"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Total</span>
+                  <span className="text-sm text-muted-foreground">總計</span>
                   <span className="text-2xl font-heading font-bold text-primary">
-                    ${selectedService.price}
+                    NT${selectedService.price}
                   </span>
                 </div>
               </motion.div>
@@ -236,10 +236,10 @@ const BookingForm = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Processing...
+                  處理中...
                 </>
               ) : (
-                "Confirm Booking"
+                "確認預約"
               )}
             </Button>
           </motion.form>

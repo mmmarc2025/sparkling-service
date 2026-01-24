@@ -15,21 +15,21 @@ const Footer = () => {
               <span className="font-heading text-xl font-bold">WashCar</span>
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Premium car wash and detailing services powered by cutting-edge technology.
+              結合尖端科技的頂級汽車美容服務。
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-heading font-semibold mb-4">Quick Links</h4>
+            <h4 className="font-heading font-semibold mb-4">快速連結</h4>
             <ul className="space-y-2">
-              {["Services", "Pricing", "About Us", "Contact"].map((item) => (
-                <li key={item}>
+              {[{ label: "服務項目", href: "services" }, { label: "價格方案", href: "pricing" }, { label: "關於我們", href: "about" }, { label: "聯絡我們", href: "contact" }].map((item) => (
+                <li key={item.href}>
                   <a
-                    href={`#${item.toLowerCase().replace(" ", "-")}`}
+                    href={`#${item.href}`}
                     className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   >
-                    {item}
+                    {item.label}
                   </a>
                 </li>
               ))}
@@ -38,9 +38,9 @@ const Footer = () => {
 
           {/* Services */}
           <div>
-            <h4 className="font-heading font-semibold mb-4">Services</h4>
+            <h4 className="font-heading font-semibold mb-4">服務項目</h4>
             <ul className="space-y-2">
-              {["Basic Wash", "Premium Detail", "Ceramic Coating", "Interior Clean"].map((item) => (
+              {["基本洗車", "精緻美容", "鍍膜服務", "內裝清潔"].map((item) => (
                 <li key={item}>
                   <span className="text-sm text-muted-foreground">{item}</span>
                 </li>
@@ -50,19 +50,19 @@ const Footer = () => {
 
           {/* Contact */}
           <div>
-            <h4 className="font-heading font-semibold mb-4">Contact</h4>
+            <h4 className="font-heading font-semibold mb-4">聯絡資訊</h4>
             <ul className="space-y-3">
               <li className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Phone className="w-4 h-4 text-primary" />
-                <span>+1 (555) 123-4567</span>
+                <span>02-1234-5678</span>
               </li>
               <li className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Mail className="w-4 h-4 text-primary" />
-                <span>hello@washcar.com</span>
+                <span>service@washcar.com.tw</span>
               </li>
               <li className="flex items-start gap-3 text-sm text-muted-foreground">
                 <MapPin className="w-4 h-4 text-primary mt-0.5" />
-                <span>123 Auto Lane, Car City, CC 12345</span>
+                <span>台北市大安區汽車街123號</span>
               </li>
             </ul>
           </div>
@@ -70,14 +70,14 @@ const Footer = () => {
 
         <div className="mt-12 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} WashCar. All rights reserved.
+            © {new Date().getFullYear()} WashCar. 版權所有。
           </p>
           <div className="flex items-center gap-6">
             <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Privacy Policy
+              隱私權政策
             </a>
             <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Terms of Service
+              服務條款
             </a>
           </div>
         </div>

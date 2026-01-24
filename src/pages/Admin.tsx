@@ -33,15 +33,21 @@ interface Booking {
 }
 
 const serviceLabels: Record<string, { label: string; price: number }> = {
-  basic: { label: "Basic Wash", price: 30 },
-  premium: { label: "Premium Detail", price: 80 },
-  ceramic: { label: "Ceramic Coating", price: 300 },
+  basic: { label: "基本洗車", price: 500 },
+  premium: { label: "精緻美容", price: 1500 },
+  ceramic: { label: "鍍膜服務", price: 6000 },
 };
 
 const statusColors: Record<string, string> = {
   PENDING: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
   COMPLETED: "bg-green-500/20 text-green-400 border-green-500/30",
   CANCELLED: "bg-red-500/20 text-red-400 border-red-500/30",
+};
+
+const statusLabels: Record<string, string> = {
+  PENDING: "待處理",
+  COMPLETED: "已完成",
+  CANCELLED: "已取消",
 };
 
 const Admin = () => {
@@ -67,8 +73,8 @@ const Admin = () => {
       } catch (error) {
         console.error("Error fetching bookings:", error);
         toast({
-          title: "Error",
-          description: "Failed to load bookings",
+          title: "錯誤",
+          description: "無法載入預約資料",
           variant: "destructive",
         });
       } finally {
@@ -132,14 +138,14 @@ const Admin = () => {
       );
 
       toast({
-        title: "Status Updated",
-        description: `Booking marked as ${status.toLowerCase()}`,
+        title: "狀態已更新",
+        description: `預約已標記為${statusLabels[status] || status}`,
       });
     } catch (error) {
       console.error("Error updating booking:", error);
       toast({
-        title: "Error",
-        description: "Failed to update booking status",
+        title: "錯誤",
+        description: "無法更新預約狀態",
         variant: "destructive",
       });
     } finally {
@@ -155,20 +161,20 @@ const Admin = () => {
         .upsert({ 
           key: "GEMINI_SYSTEM_PROMPT", 
           value: systemPrompt,
-          description: "System instruction for the LINE Bot AI assistant"
+        description: "LINE Bot AI 助理的系統指令"
         });
 
       if (error) throw error;
 
       toast({
-        title: "Saved",
-        description: "System prompt updated successfully",
+        title: "已儲存",
+        description: "系統提示詞更新成功",
       });
     } catch (error) {
       console.error("Error saving system prompt:", error);
       toast({
-        title: "Error",
-        description: "Failed to save system prompt",
+        title: "錯誤",
+        description: "無法儲存系統提示詞",
         variant: "destructive",
       });
     } finally {
@@ -189,7 +195,7 @@ const Admin = () => {
                 </Button>
               </Link>
               <h1 className="font-heading text-xl md:text-2xl font-bold">
-                Admin Dashboard
+                管理後台
               </h1>
             </div>
           </div>
@@ -204,14 +210,14 @@ const Admin = () => {
               className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 py-3 touch-target"
             >
               <Calendar className="w-4 h-4 mr-2" />
-              Bookings
+              預約管理
             </TabsTrigger>
             <TabsTrigger
               value="ai"
               className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 py-3 touch-target"
             >
               <Settings className="w-4 h-4 mr-2" />
-              AI Configuration
+              AI 設定
             </TabsTrigger>
           </TabsList>
 
@@ -230,10 +236,10 @@ const Admin = () => {
                 <div className="glass-card p-12 text-center">
                   <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="font-heading text-xl font-semibold mb-2">
-                    No Bookings Yet
+                    尚無預約
                   </h3>
                   <p className="text-muted-foreground">
-                    Bookings will appear here when customers make reservations.
+                    當客戶預約時，資料將會顯示在這裡。
                   </p>
                 </div>
               ) : (
@@ -244,22 +250,22 @@ const Admin = () => {
                       <thead>
                         <tr className="border-b border-white/10">
                           <th className="text-left p-4 font-heading font-semibold text-sm">
-                            Customer
+                            客戶
                           </th>
                           <th className="text-left p-4 font-heading font-semibold text-sm">
-                            Phone
+                            電話
                           </th>
                           <th className="text-left p-4 font-heading font-semibold text-sm">
-                            Service
+                            服務
                           </th>
                           <th className="text-left p-4 font-heading font-semibold text-sm">
-                            Time
+                            時間
                           </th>
                           <th className="text-left p-4 font-heading font-semibold text-sm">
-                            Status
+                            狀態
                           </th>
                           <th className="text-right p-4 font-heading font-semibold text-sm">
-                            Actions
+                            操作
                           </th>
                         </tr>
                       </thead>
@@ -290,12 +296,12 @@ const Admin = () => {
                                     booking.service_type}
                                 </span>
                                 <span className="text-primary font-semibold">
-                                  ${serviceLabels[booking.service_type]?.price || 0}
+                                  NT${serviceLabels[booking.service_type]?.price || 0}
                                 </span>
                               </div>
                             </td>
                             <td className="p-4 text-muted-foreground">
-                              {format(new Date(booking.start_time), "MMM d, yyyy h:mm a")}
+                              {format(new Date(booking.start_time), "yyyy/MM/dd HH:mm")}
                             </td>
                             <td className="p-4">
                               <span
@@ -312,7 +318,7 @@ const Admin = () => {
                                 {booking.status === "CANCELLED" && (
                                   <XCircle className="w-3 h-3" />
                                 )}
-                                {booking.status}
+                                {statusLabels[booking.status] || booking.status}
                               </span>
                             </td>
                             <td className="p-4">
@@ -385,28 +391,28 @@ const Admin = () => {
                               statusColors[booking.status] || statusColors.PENDING
                             }`}
                           >
-                            {booking.status}
+                            {statusLabels[booking.status] || booking.status}
                           </span>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <p className="text-muted-foreground mb-1">Service</p>
+                            <p className="text-muted-foreground mb-1">服務</p>
                             <p className="font-medium">
                               {serviceLabels[booking.service_type]?.label ||
                                 booking.service_type}
                             </p>
                           </div>
                           <div>
-                            <p className="text-muted-foreground mb-1">Price</p>
+                            <p className="text-muted-foreground mb-1">價格</p>
                             <p className="font-medium text-primary">
-                              ${serviceLabels[booking.service_type]?.price || 0}
+                              NT${serviceLabels[booking.service_type]?.price || 0}
                             </p>
                           </div>
                           <div className="col-span-2">
-                            <p className="text-muted-foreground mb-1">Time</p>
+                            <p className="text-muted-foreground mb-1">時間</p>
                             <p className="font-medium">
-                              {format(new Date(booking.start_time), "MMM d, yyyy h:mm a")}
+                              {format(new Date(booking.start_time), "yyyy/MM/dd HH:mm")}
                             </p>
                           </div>
                         </div>
@@ -426,7 +432,7 @@ const Admin = () => {
                               ) : (
                                 <>
                                   <CheckCircle className="w-4 h-4 mr-1" />
-                                  Complete
+                                  完成
                                 </>
                               )}
                             </Button>
@@ -443,7 +449,7 @@ const Admin = () => {
                               ) : (
                                 <>
                                   <XCircle className="w-4 h-4 mr-1" />
-                                  Cancel
+                                  取消
                                 </>
                               )}
                             </Button>
@@ -469,9 +475,9 @@ const Admin = () => {
                   <Settings className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h2 className="font-heading text-xl font-bold">AI Configuration</h2>
+                  <h2 className="font-heading text-xl font-bold">AI 設定</h2>
                   <p className="text-sm text-muted-foreground">
-                    Configure the LINE Bot AI assistant behavior
+                    設定 LINE Bot AI 助理的行為模式
                   </p>
                 </div>
               </div>
@@ -479,16 +485,16 @@ const Admin = () => {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="system-prompt" className="text-sm font-medium">
-                    System Instruction
+                    系統指令
                   </Label>
                   <p className="text-xs text-muted-foreground">
-                    This instruction tells the AI how to behave when responding to customers.
+                    此指令用於定義 AI 在回覆客戶時的行為方式。
                   </p>
                   <Textarea
                     id="system-prompt"
                     value={systemPrompt}
                     onChange={(e) => setSystemPrompt(e.target.value)}
-                    placeholder="You are a helpful car wash assistant..."
+                    placeholder="您是一位專業的汽車美容客服助理..."
                     className="min-h-[200px] bg-white/5 border-white/10 focus:border-primary resize-none"
                     disabled={isLoadingPrompt}
                   />
@@ -502,12 +508,12 @@ const Admin = () => {
                   {isSavingPrompt ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      Saving...
+                      儲存中...
                     </>
                   ) : (
                     <>
                       <Save className="w-4 h-4 mr-2" />
-                      Save Configuration
+                      儲存設定
                     </>
                   )}
                 </Button>

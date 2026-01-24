@@ -54,7 +54,7 @@ const HeroSection = () => {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-6"
             >
               <Sparkles className="w-4 h-4 text-primary" />
-              <span className="text-sm font-medium">Premium Car Care</span>
+              <span className="text-sm font-medium">頂級汽車美容</span>
             </motion.div>
 
             <motion.h1
@@ -63,9 +63,9 @@ const HeroSection = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="font-heading text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-tight mb-6"
             >
-              Give Your Car
+              給您的愛車
               <br />
-              <span className="text-gradient">The Royal Treatment</span>
+              <span className="text-gradient">尊榮級的呵護</span>
             </motion.h1>
 
             <motion.p
@@ -74,7 +74,7 @@ const HeroSection = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg md:text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 mb-8"
             >
-              Premium detailing service with AI-powered booking. Experience the future of car care with our cutting-edge technology and expert team.
+              專業汽車美容服務，結合智慧預約系統。體驗最先進的技術與專業團隊帶來的極致服務。
             </motion.p>
 
             {/* Stats */}
@@ -85,9 +85,9 @@ const HeroSection = () => {
               className="flex flex-wrap items-center justify-center lg:justify-start gap-8"
             >
               {[
-                { value: "10K+", label: "Happy Customers" },
-                { value: "4.9", label: "Average Rating" },
-                { value: "24/7", label: "Support" },
+                { value: "10K+", label: "滿意客戶" },
+                { value: "4.9", label: "平均評分" },
+                { value: "24/7", label: "全天候服務" },
               ].map((stat, index) => (
                 <div key={index} className="text-center lg:text-left">
                   <div className="font-heading text-2xl md:text-3xl font-bold text-primary">

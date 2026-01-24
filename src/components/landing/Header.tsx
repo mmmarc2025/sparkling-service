@@ -8,9 +8,9 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { href: "#services", label: "Services" },
-    { href: "#features", label: "Features" },
-    { href: "#contact", label: "Contact" },
+    { href: "#services", label: "服務項目" },
+    { href: "#features", label: "特色優勢" },
+    { href: "#contact", label: "聯絡我們" },
   ];
 
   return (
@@ -39,7 +39,7 @@ const Header = () => {
               ))}
               <Link to="/admin">
                 <Button variant="outline" size="sm">
-                  Admin
+                  管理後台
                 </Button>
               </Link>
             </nav>
@@ -82,7 +82,7 @@ const Header = () => {
                 className="px-4 py-3 rounded-xl text-sm font-medium text-primary hover:bg-primary/10 transition-colors touch-target"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                Admin Dashboard
+                管理後台
               </Link>
             </nav>
           </motion.div>
