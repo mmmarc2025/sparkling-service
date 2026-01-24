@@ -4,33 +4,33 @@ import { Shield, Clock, Star, Droplets, Leaf, Award } from "lucide-react";
 const features = [
   {
     icon: Shield,
-    title: "Premium Protection",
-    description: "Advanced ceramic coatings and paint protection to shield your vehicle from the elements.",
+    title: "頂級防護",
+    description: "採用先進的陶瓷鍍膜和漆面保護技術，為您的愛車抵禦各種環境侵害。",
   },
   {
     icon: Clock,
-    title: "Quick Turnaround",
-    description: "Most services completed within hours, not days. Get back on the road faster.",
+    title: "快速服務",
+    description: "大部分服務在數小時內完成，讓您快速取車，不耽誤行程。",
   },
   {
     icon: Star,
-    title: "5-Star Quality",
-    description: "Consistently rated 5 stars by our customers. Quality you can trust every time.",
+    title: "五星品質",
+    description: "客戶一致給予五星好評，值得信賴的優質服務。",
   },
   {
     icon: Droplets,
-    title: "Eco-Friendly",
-    description: "Water-saving techniques and biodegradable products that are gentle on the planet.",
+    title: "環保節水",
+    description: "採用節水技術和環保清潔用品，對地球更友善。",
   },
   {
     icon: Leaf,
-    title: "Natural Products",
-    description: "Chemical-free options available for interior cleaning and detailing.",
+    title: "天然產品",
+    description: "提供無化學成分的內裝清潔和美容選項。",
   },
   {
     icon: Award,
-    title: "Certified Experts",
-    description: "Our team is certified in the latest detailing techniques and technologies.",
+    title: "專業認證",
+    description: "團隊擁有最新美容技術認證，專業可靠。",
   },
 ];
 
@@ -49,10 +49,10 @@ const FeaturesSection = () => {
           className="text-center mb-16"
         >
           <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
-            Why Choose <span className="text-gradient">Our Service</span>
+            為什麼選擇 <span className="text-gradient">我們的服務</span>
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            We combine cutting-edge technology with expert craftsmanship to deliver exceptional results.
+            結合尖端科技與專業工藝，為您提供卓越的服務體驗。
           </p>
         </motion.div>
 
