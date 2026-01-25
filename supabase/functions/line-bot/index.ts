@@ -1,6 +1,5 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { type WebhookEvent, messagingApi, validateSignature } from "npm:@line/bot-sdk@7.5.2";
+import { Client, validateSignature, WebhookEvent } from "npm:@line/bot-sdk@8.0.0";
 import { GoogleGenerativeAI } from "npm:@google/generative-ai";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
@@ -11,7 +10,7 @@ const channelSecret = (Deno.env.get("LINE_CHANNEL_SECRET") || "").trim();
 const geminiApiKey = Deno.env.get("GEMINI_API_KEY")!;
 
 // Initialize LINE Client
-const client = new messagingApi.MessagingApiClient({
+const lineClient = new Client({
   channelAccessToken: channelAccessToken,
 });
 
@@ -27,79 +26,106 @@ serve(async (req) => {
   try {
     const signature = req.headers.get("x-line-signature");
     if (!signature) {
+      console.error("Missing x-line-signature header");
       return new Response("Missing signature", { status: 401 });
     }
 
     const body = await req.text();
+    console.log("Received webhook body length:", body.length);
 
     if (!channelSecret) {
+      console.error("Missing LINE_CHANNEL_SECRET");
       return new Response("Server Error: Missing Channel Secret", { status: 500 });
     }
 
     // Validate signature
-    if (!validateSignature(body, channelSecret, signature)) {
-      const secretPreview = channelSecret.substring(0, 3) + "***" + channelSecret.substring(channelSecret.length - 3);
-      return new Response(`Invalid signature. Used Secret: ${secretPreview}. BodyLen: ${body.length}`, { status: 401 });
+    const isValid = validateSignature(body, channelSecret, signature);
+    if (!isValid) {
+      console.error("Invalid signature");
+      return new Response("Invalid signature", { status: 401 });
     }
 
-    const events: WebhookEvent[] = JSON.parse(body).events;
+    console.log("Signature validated successfully");
 
+    const events: WebhookEvent[] = JSON.parse(body).events;
+    console.log("Processing", events.length, "events");
+
+    // Process events in the background
     const processingPromise = processEvents(events);
 
-    // @ts-ignore
+    // Use waitUntil if available for background processing
+    // @ts-ignore - EdgeRuntime may not be typed
     if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
       // @ts-ignore
       EdgeRuntime.waitUntil(processingPromise);
     } else {
-      processingPromise.catch(console.error);
+      processingPromise.catch((err) => console.error("Processing error:", err));
     }
 
+    // Return 200 immediately to LINE
     return new Response("OK", { status: 200 });
 
-  } catch (err) {
-    console.error("Error processing request:", err);
-    return new Response(`Error: ${err.message}`, { status: 500 });
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Unknown error";
+    console.error("Error processing request:", errorMessage);
+    return new Response(`Error: ${errorMessage}`, { status: 500 });
   }
 });
 
 async function processEvents(events: WebhookEvent[]) {
-  await Promise.all(
-    events.map(async (event) => {
-      if (event.replyToken === '00000000000000000000000000000000') return;
+  for (const event of events) {
+    // Skip verification events
+    if ("replyToken" in event && event.replyToken === "00000000000000000000000000000000") {
+      console.log("Skipping verification event");
+      continue;
+    }
 
-      if (event.type === "message" && event.message.type === "text") {
-        const userMessage = event.message.text;
-        const replyToken = event.replyToken;
+    if (event.type === "message" && event.message.type === "text") {
+      const userMessage = event.message.text;
+      const replyToken = event.replyToken;
 
-        try {
-          let systemPrompt = "You are a helpful car wash assistant.";
-          const { data: setting } = await supabase
-            .from("system_settings")
-            .select("value")
-            .eq("key", "GEMINI_SYSTEM_PROMPT")
-            .single();
+      console.log("Processing message:", userMessage);
 
-          if (setting?.value) systemPrompt = setting.value;
+      try {
+        // Get system prompt from database
+        let systemPrompt = "You are a helpful car wash assistant.";
+        const { data: setting } = await supabase
+          .from("system_settings")
+          .select("value")
+          .eq("key", "GEMINI_SYSTEM_PROMPT")
+          .single();
 
-          const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-          const chat = model.startChat({
-            history: [
-              { role: "user", parts: [{ text: `System Instruction: ${systemPrompt}` }] },
-              { role: "model", parts: [{ text: "Understood." }] },
-            ],
-          });
-
-          const result = await chat.sendMessage(userMessage);
-          const aiResponse = result.response.text();
-
-          await client.replyMessage({
-            replyToken: replyToken,
-            messages: [{ type: "text", text: aiResponse }],
-          });
-        } catch (innerErr) {
-          console.error("Error:", innerErr);
+        if (setting?.value) {
+          systemPrompt = setting.value;
         }
+
+        console.log("Using system prompt:", systemPrompt.substring(0, 50) + "...");
+
+        // Generate AI response
+        const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+        const chat = model.startChat({
+          history: [
+            { role: "user", parts: [{ text: `System Instruction: ${systemPrompt}` }] },
+            { role: "model", parts: [{ text: "Understood." }] },
+          ],
+        });
+
+        const result = await chat.sendMessage(userMessage);
+        const aiResponse = result.response.text();
+
+        console.log("AI response generated, length:", aiResponse.length);
+
+        // Reply to user
+        await lineClient.replyMessage(replyToken, {
+          type: "text",
+          text: aiResponse,
+        });
+
+        console.log("Reply sent successfully");
+      } catch (innerErr: unknown) {
+        const errorMessage = innerErr instanceof Error ? innerErr.message : "Unknown error";
+        console.error("Error processing message:", errorMessage);
       }
-    })
-  );
+    }
+  }
 }
