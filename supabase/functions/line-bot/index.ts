@@ -105,15 +105,38 @@ async function getSystemPrompt(): Promise<string> {
 
   const basePrompt = data?.value || "你是一位專業的汽車美容服務助理。請用繁體中文回答客戶的問題，提供友善、專業的服務諮詢。";
 
+  // Fetch Service Menu from DB
+  const { data: services } = await supabase
+    .from('services')
+    .select('*')
+    .eq('is_active', true)
+    .order('id', { ascending: true });
+
+  let serviceMenuText = "\n[SERVICE MENU & PRICING]\n";
+  if (services && services.length > 0) {
+    services.forEach((svc: any, index: number) => {
+      if (svc.category === 'TIERED') {
+        serviceMenuText += `${index + 1}. ${svc.name}: Small ${svc.price_small} / Medium ${svc.price_medium} / Large ${svc.price_large}\n   (${svc.description || ''})\n`;
+      } else {
+        serviceMenuText += `${index + 1}. ${svc.name}: $${svc.price_flat}\n   (${svc.description || ''})\n`;
+      }
+    });
+  } else {
+    // Fallback if DB fetch fails
+    serviceMenuText += "No services found in database.\n";
+  }
+
   // Calculate Current Time for Context
   const now = new Date();
   // Adjust to Taipei Time (UTC+8) roughly for display context, or use locale string
   const taiwanTime = new Date(now.toLocaleString("en-US", { timeZone: "Asia/Taipei" }));
   const currentTimeString = taiwanTime.toLocaleString("zh-TW", { hour12: false }); // e.g. "2024/10/22 22:15:30"
 
-  // Inject Booking Instruction with Time Context
+  // Inject Booking Instruction with Time Context AND Service Menu
   const bookingInstruction = `
   
+  ${serviceMenuText}
+
   [CURRENT DATE/TIME]
   Today is: ${currentTimeString} (Asia/Taipei Time)
   

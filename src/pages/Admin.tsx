@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { 
-  Calendar, 
-  Settings, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  User, 
-  Phone, 
+import {
+  Calendar,
+  Settings,
+  CheckCircle,
+  XCircle,
+  Clock,
+  User,
+  Phone,
   Car,
   Save,
   Loader2,
@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
+import { ServiceManager } from "@/components/ServiceManager";
 
 interface Booking {
   id: string;
@@ -158,10 +159,10 @@ const Admin = () => {
     try {
       const { error } = await supabase
         .from("system_settings")
-        .upsert({ 
-          key: "GEMINI_SYSTEM_PROMPT", 
+        .upsert({
+          key: "GEMINI_SYSTEM_PROMPT",
           value: systemPrompt,
-        description: "LINE Bot AI 助理的系統指令"
+          description: "LINE Bot AI 助理的系統指令"
         });
 
       if (error) throw error;
@@ -218,6 +219,13 @@ const Admin = () => {
             >
               <Settings className="w-4 h-4 mr-2" />
               AI 設定
+            </TabsTrigger>
+            <TabsTrigger
+              value="services"
+              className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 py-3 touch-target"
+            >
+              <Car className="w-4 h-4 mr-2" />
+              服務項目
             </TabsTrigger>
           </TabsList>
 
@@ -305,9 +313,8 @@ const Admin = () => {
                             </td>
                             <td className="p-4">
                               <span
-                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${
-                                  statusColors[booking.status] || statusColors.PENDING
-                                }`}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${statusColors[booking.status] || statusColors.PENDING
+                                  }`}
                               >
                                 {booking.status === "PENDING" && (
                                   <Clock className="w-3 h-3" />
@@ -387,9 +394,8 @@ const Admin = () => {
                             </div>
                           </div>
                           <span
-                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${
-                              statusColors[booking.status] || statusColors.PENDING
-                            }`}
+                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border ${statusColors[booking.status] || statusColors.PENDING
+                              }`}
                           >
                             {statusLabels[booking.status] || booking.status}
                           </span>
@@ -520,9 +526,19 @@ const Admin = () => {
               </div>
             </motion.div>
           </TabsContent>
+
+          {/* Service Manager Tab */}
+          <TabsContent value="services">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <ServiceManager />
+            </motion.div>
+          </TabsContent>
         </Tabs>
       </main>
-    </div>
+    </div >
   );
 };
 
