@@ -3,5 +3,3 @@ project_id = "kiekwhkebemrfsekfbwf"
 [functions.line-bot]
 enabled = true
 verify_jwt = false
-import_map = "./functions/line-bot/deno.json"
-entrypoint = "./functions/line-bot/index.ts"
