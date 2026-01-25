@@ -5,7 +5,7 @@ console.log("LINE Bot Function Started");
 
 const LINE_CHANNEL_ACCESS_TOKEN = Deno.env.get("LINE_CHANNEL_ACCESS_TOKEN")!;
 const LINE_CHANNEL_SECRET = Deno.env.get("LINE_CHANNEL_SECRET")!;
-const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")!;
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY")!;
 
 // Initialize Supabase Client
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -50,42 +50,42 @@ async function replyMessage(replyToken: string, text: string): Promise<void> {
   console.log("Message sent successfully");
 }
 
-// Call Gemini API for AI response
+// Call Lovable AI Gateway for AI response
 async function getAIResponse(userMessage: string, systemPrompt: string): Promise<string> {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: "user",
-            parts: [{ text: `${systemPrompt}\n\n用戶訊息: ${userMessage}` }],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 500,
-        },
-      }),
-    }
-  );
+  console.log("Calling Lovable AI Gateway...");
+  
+  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${LOVABLE_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+      max_tokens: 500,
+      temperature: 0.7,
+    }),
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Gemini API error:", response.status, errorText);
-    throw new Error(`Gemini API error: ${response.status}`);
+    console.error("Lovable AI error:", response.status, errorText);
+    throw new Error(`Lovable AI error: ${response.status}`);
   }
 
   const data = await response.json();
-  const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const aiText = data.choices?.[0]?.message?.content;
   
   if (!aiText) {
-    console.error("No response from Gemini:", JSON.stringify(data));
+    console.error("No response from Lovable AI:", JSON.stringify(data));
     throw new Error("No response from AI");
   }
 
+  console.log("AI response received successfully");
   return aiText;
 }
 
