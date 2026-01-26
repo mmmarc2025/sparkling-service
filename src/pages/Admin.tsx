@@ -11,7 +11,8 @@ import {
   Car,
   Save,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ServiceManager } from "@/components/ServiceManager";
+import { useAuth, ROLE_PERMISSIONS } from "@/contexts/AuthContext";
 
 interface Booking {
   id: string;
@@ -53,12 +55,16 @@ const statusLabels: Record<string, string> = {
 
 const Admin = () => {
   const { toast } = useToast();
+  const { user, logout } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoadingBookings, setIsLoadingBookings] = useState(true);
   const [systemPrompt, setSystemPrompt] = useState("");
   const [isLoadingPrompt, setIsLoadingPrompt] = useState(true);
   const [isSavingPrompt, setIsSavingPrompt] = useState(false);
   const [updatingBookingId, setUpdatingBookingId] = useState<string | null>(null);
+
+  // Get user permissions
+  const permissions = user ? ROLE_PERMISSIONS[user.role] || [] : [];
 
   // Fetch bookings
   useEffect(() => {
@@ -206,6 +212,26 @@ const Admin = () => {
               <h1 className="font-heading text-xl md:text-2xl font-bold">
                 管理後台
               </h1>
+            </div>
+            <div className="flex items-center gap-4">
+              {user && (
+                <>
+                  <div className="flex items-center gap-2">
+                    {user.picture_url && (
+                      <img src={user.picture_url} alt="" className="w-8 h-8 rounded-full" />
+                    )}
+                    <span className="text-sm hidden md:inline">{user.display_name}</span>
+                    <span className="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary">
+                      {user.role === 'super_admin' ? '最高管理員' :
+                        user.role === 'store_manager' ? '店家管理' :
+                          user.role === 'community_manager' ? '社群管理' : '一般用戶'}
+                    </span>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={logout}>
+                    <LogOut className="w-5 h-5" />
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
