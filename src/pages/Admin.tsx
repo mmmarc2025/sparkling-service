@@ -23,6 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { ServiceManager } from "@/components/ServiceManager";
+import { UserManager } from "@/components/UserManager";
 import { useAuth, ROLE_PERMISSIONS } from "@/contexts/AuthContext";
 
 interface Booking {
@@ -261,6 +262,15 @@ const Admin = () => {
               <Car className="w-4 h-4 mr-2" />
               服務項目
             </TabsTrigger>
+            {user?.role === 'super_admin' && (
+              <TabsTrigger
+                value="users"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground px-6 py-3 touch-target"
+              >
+                <User className="w-4 h-4 mr-2" />
+                用戶管理
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Bookings Tab */}
@@ -570,6 +580,18 @@ const Admin = () => {
               <ServiceManager />
             </motion.div>
           </TabsContent>
+
+          {/* User Manager Tab - Super Admin Only */}
+          {user?.role === 'super_admin' && (
+            <TabsContent value="users">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <UserManager />
+              </motion.div>
+            </TabsContent>
+          )}
         </Tabs>
       </main>
     </div >
