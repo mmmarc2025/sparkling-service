@@ -63,7 +63,9 @@ const BookingForm = () => {
       
       setTimeout(() => setIsSuccess(false), 3000);
     } catch (error) {
-      console.error("Booking error:", error);
+      if (import.meta.env.DEV) {
+        console.error("Booking error:", error);
+      }
       toast({
         title: "預約失敗",
         description: "請稍後再試",

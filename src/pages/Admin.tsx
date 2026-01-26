@@ -72,7 +72,9 @@ const Admin = () => {
         if (error) throw error;
         setBookings(data || []);
       } catch (error) {
-        console.error("Error fetching bookings:", error);
+        if (import.meta.env.DEV) {
+          console.error("Error fetching bookings:", error);
+        }
         toast({
           title: "錯誤",
           description: "無法載入預約資料",
@@ -115,7 +117,9 @@ const Admin = () => {
         if (error && error.code !== "PGRST116") throw error;
         setSystemPrompt(data?.value || "");
       } catch (error) {
-        console.error("Error fetching system prompt:", error);
+        if (import.meta.env.DEV) {
+          console.error("Error fetching system prompt:", error);
+        }
       } finally {
         setIsLoadingPrompt(false);
       }
@@ -143,7 +147,9 @@ const Admin = () => {
         description: `預約已標記為${statusLabels[status] || status}`,
       });
     } catch (error) {
-      console.error("Error updating booking:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error updating booking:", error);
+      }
       toast({
         title: "錯誤",
         description: "無法更新預約狀態",
@@ -172,7 +178,9 @@ const Admin = () => {
         description: "系統提示詞更新成功",
       });
     } catch (error) {
-      console.error("Error saving system prompt:", error);
+      if (import.meta.env.DEV) {
+        console.error("Error saving system prompt:", error);
+      }
       toast({
         title: "錯誤",
         description: "無法儲存系統提示詞",

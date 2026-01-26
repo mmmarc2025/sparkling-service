@@ -77,7 +77,9 @@ export function ServiceManager() {
             if (error) throw error;
             setServices(data || []);
         } catch (error) {
-            console.error("Error fetching services:", error);
+            if (import.meta.env.DEV) {
+                console.error("Error fetching services:", error);
+            }
             toast({
                 title: "錯誤",
                 description: "無法載入服務項目",
@@ -154,7 +156,9 @@ export function ServiceManager() {
             setIsDialogOpen(false);
             fetchServices();
         } catch (error) {
-            console.error("Error saving service:", error);
+            if (import.meta.env.DEV) {
+                console.error("Error saving service:", error);
+            }
             toast({ title: "錯誤", description: "儲存失敗", variant: "destructive" });
         }
     };
@@ -170,7 +174,9 @@ export function ServiceManager() {
             toast({ title: "已刪除", description: "服務項目已移除" });
             fetchServices();
         } catch (error) {
-            console.error("Error deleting service:", error);
+            if (import.meta.env.DEV) {
+                console.error("Error deleting service:", error);
+            }
             toast({ title: "錯誤", description: "刪除失敗", variant: "destructive" });
         }
     };
