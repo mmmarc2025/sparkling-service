@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, Clock, User, Phone, Car, CheckCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,10 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://kiekwhkebemrfsekfbwf.supabase.co';
+const PENDING_BOOKING_KEY = 'pending_booking';
 
 const services = [
   { value: "basic", label: "基本洗車", price: 500 },
@@ -22,6 +26,7 @@ const services = [
 
 const BookingForm = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [formData, setFormData] = useState({
@@ -32,9 +37,57 @@ const BookingForm = () => {
     service: "",
   });
 
+  // Check for pending booking on mount (after login callback)
+  useEffect(() => {
+    const checkPendingBooking = async () => {
+      const pending = localStorage.getItem(PENDING_BOOKING_KEY);
+      if (pending) {
+        const bookingData = JSON.parse(pending);
+        localStorage.removeItem(PENDING_BOOKING_KEY);
+
+        // Check if user is now logged in
+        const token = localStorage.getItem('carwash_auth_token');
+        if (token) {
+          // Submit the pending booking
+          try {
+            setIsLoading(true);
+            const startTime = new Date(`${bookingData.date}T${bookingData.time}`);
+
+            const { error } = await supabase.from("bookings").insert({
+              customer_name: bookingData.name.trim(),
+              phone: bookingData.phone.trim(),
+              service_type: bookingData.service,
+              start_time: startTime.toISOString(),
+            });
+
+            if (error) throw error;
+
+            setIsSuccess(true);
+            toast({
+              title: "預約成功！",
+              description: "我們將盡快與您聯繫確認預約詳情。",
+            });
+            setTimeout(() => setIsSuccess(false), 3000);
+          } catch (error) {
+            console.error("Pending booking error:", error);
+            toast({
+              title: "預約失敗",
+              description: "請重新填寫預約表單",
+              variant: "destructive",
+            });
+          } finally {
+            setIsLoading(false);
+          }
+        }
+      }
+    };
+
+    checkPendingBooking();
+  }, [toast]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.phone || !formData.date || !formData.time || !formData.service) {
       toast({
         title: "資料不完整",
@@ -44,11 +97,26 @@ const BookingForm = () => {
       return;
     }
 
+    // Check if user is logged in
+    const token = localStorage.getItem('carwash_auth_token');
+
+    if (!token) {
+      // Save booking data to localStorage and redirect to login
+      localStorage.setItem(PENDING_BOOKING_KEY, JSON.stringify(formData));
+      toast({
+        title: "請先登入",
+        description: "完成登入後將自動完成預約",
+      });
+      // Redirect to LINE login
+      window.location.href = `${SUPABASE_URL}/functions/v1/line-auth/login`;
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const startTime = new Date(`${formData.date}T${formData.time}`);
-      
+
       const { error } = await supabase.from("bookings").insert({
         customer_name: formData.name.trim(),
         phone: formData.phone.trim(),
@@ -60,7 +128,7 @@ const BookingForm = () => {
 
       setIsSuccess(true);
       setFormData({ name: "", phone: "", date: "", time: "", service: "" });
-      
+
       setTimeout(() => setIsSuccess(false), 3000);
     } catch (error) {
       if (import.meta.env.DEV) {
@@ -104,6 +172,13 @@ const BookingForm = () => {
             </motion.div>
             <h3 className="font-heading text-2xl font-bold mb-2">預約成功！</h3>
             <p className="text-muted-foreground">我們將盡快與您聯繫確認預約詳情。</p>
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => navigate('/my-bookings')}
+            >
+              查看我的預約
+            </Button>
           </motion.div>
         ) : (
           <motion.form
