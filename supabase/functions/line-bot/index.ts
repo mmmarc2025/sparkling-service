@@ -290,9 +290,16 @@ serve(async (req) => {
     const signature = req.headers.get("x-line-signature");
     const body = await req.text();
 
-    if (signature) {
-      const isValid = await validateSignature(body, signature);
-      if (!isValid) console.error("Invalid signature");
+    // SECURITY FIX: Reject requests without valid signature
+    if (!signature) {
+      console.error("Missing x-line-signature header");
+      return new Response("Unauthorized: Missing signature", { status: 401 });
+    }
+
+    const isValid = await validateSignature(body, signature);
+    if (!isValid) {
+      console.error("Invalid signature - rejecting request");
+      return new Response("Unauthorized: Invalid signature", { status: 401 });
     }
 
     let events: any[] = [];
