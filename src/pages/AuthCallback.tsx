@@ -21,7 +21,7 @@ export default function AuthCallback() {
         if (token) {
             saveAuthToken(token);
             // Reload to pick up the new token in AuthContext
-            window.location.href = "/admin";
+            window.location.href = "/";
         } else {
             navigate("/login", { replace: true });
         }
