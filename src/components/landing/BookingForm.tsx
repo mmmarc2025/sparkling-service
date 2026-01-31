@@ -16,7 +16,7 @@ const PENDING_BOOKING_KEY = 'pending_booking';
 const services = [
   { value: "basic", label: "基本洗車", price: 700, desc: "泡沫清洗 + 內裝簡易吸塵" },
   { value: "premium", label: "精緻美容", price: 3000, desc: "深層去汙 + 手工打蠟 + 皮革保養" },
-  { value: "ceramic", label: "頂級鍍膜", price: 6000, desc: "全車拋光 + 雙層鍍膜防護" },
+  { value: "ceramic", label: "頂級鍍膜", price: 8000, desc: "全車拋光 + 雙層鍍膜防護" },
 ];
 
 const BookingForm = () => {
