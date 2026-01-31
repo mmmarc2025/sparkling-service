@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-console.log("LINE Bot Function Started (With Store Location)");
+console.log("LINE Bot Function Started (Multi-Store Logic)");
 
 const LINE_CHANNEL_ACCESS_TOKEN = Deno.env.get("LINE_CHANNEL_ACCESS_TOKEN")!;
 const LINE_CHANNEL_SECRET = Deno.env.get("LINE_CHANNEL_SECRET")!;
@@ -63,14 +63,17 @@ async function getAIResponse(userMessage: string, systemPrompt: string, history:
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
+      model: "google/gemini-2.0-flash-exp", 
       messages: messages,
       max_tokens: 500,
-      temperature: 0.7,
+      temperature: 0.5, 
     }),
   });
 
-  if (!response.ok) throw new Error(`AI error: ${response.status}`);
+  if (!response.ok) {
+    console.error("AI API Error:", await response.text());
+    throw new Error(`AI error: ${response.status}`);
+  }
   const data = await response.json();
   return data.choices?.[0]?.message?.content || "抱歉，我無法處理您的請求。";
 }
@@ -83,36 +86,33 @@ async function getSystemPrompt(): Promise<string> {
     .eq("key", "GEMINI_SYSTEM_PROMPT")
     .maybeSingle();
 
-  const basePrompt = data?.value || "你是一位專業的汽車美容服務助理。請用繁體中文回答客戶的問題，提供友善、專業的服務諮詢。";
+  const basePrompt = data?.value || "你是一位專業的 WashCar 汽車美容服務助理。請用繁體中文回答。";
 
-  // Fetch Services
+  // Fetch Active Stores
+  const { data: stores } = await supabase
+    .from('stores')
+    .select('id, name, address')
+    .eq('is_active', true);
+
+  let storeListText = "\n[AVAILABLE STORES]\n";
+  
+  if (stores && stores.length > 0) {
+    stores.forEach((store: any) => {
+      storeListText += `- ${store.name} (ID: ${store.id}, Addr: ${store.address})\n`;
+    });
+  }
+
+  // Fetch Services (General List)
   const { data: services } = await supabase
     .from('services')
     .select('*')
     .eq('is_active', true)
-    .order('id', { ascending: true });
+    .limit(10); 
 
-  let serviceMenuText = "\n[SERVICE MENU & PRICING]\n";
+  let serviceMenuText = "\n[SERVICES]\n";
   if (services && services.length > 0) {
-    services.forEach((svc: any, index: number) => {
-      if (svc.category === 'TIERED') {
-        serviceMenuText += `${index + 1}. ${svc.name}: Small ${svc.price_small} / Medium ${svc.price_medium} / Large ${svc.price_large}\n`;
-      } else {
-        serviceMenuText += `${index + 1}. ${svc.name}: $${svc.price_flat}\n`;
-      }
-    });
-  }
-
-  // Fetch Stores
-  const { data: stores } = await supabase
-    .from('stores')
-    .select('*')
-    .eq('is_active', true);
-
-  let storeListText = "\n[STORE LOCATIONS]\n";
-  if (stores && stores.length > 0) {
-    stores.forEach((store: any, index: number) => {
-      storeListText += `${index + 1}. ${store.name} - ${store.address}\n`;
+    services.forEach((svc: any) => {
+      serviceMenuText += `- ${svc.name}: $${svc.price_flat || svc.price_small}\n`;
     });
   }
 
@@ -125,31 +125,33 @@ async function getSystemPrompt(): Promise<string> {
   ${serviceMenuText}
   ${storeListText}
 
-  [CURRENT DATE/TIME]
-  Today is: ${currentTimeString} (Asia/Taipei Time)
+  [CURRENT TIME]
+  Now: ${currentTimeString} (Taiwan Time)
   
-  [BOOKING FLOW INSTRUCTION]
-  When the user wants to book, you MUST collect these 5 items:
+  [BOOKING RULES]
+  To make a booking, you MUST identify 5 fields. If any is missing, ASK the user.
   1. Customer Name
-  2. Phone Number
-  3. Service Type
-  4. Reservation Time
-  5. **Store Location** - Ask the user "請問您想預約哪一家店呢？您可以傳送您的位置，我幫您找最近的店家！" 
-     Then, if user sends their location (you will receive a message like "[LOCATION: lat, lng - nearest store: ...]"), use that nearest store.
-     If user specifies a store name directly, use that.
+  2. Phone
+  3. Service Name
+  4. Time (ISO 8601 format with +08:00)
+  5. **Store Name** (MUST EXACTLY match one from [AVAILABLE STORES])
+
+  If the user says "nearest store" or sends location, ask them to confirm the store name I suggest.
   
-  Once ALL 5 items are confirmed, output the booking JSON:
+  [OUTPUT FORMAT]
+  If ALL 5 fields are collected and confirmed:
+  Output ONLY this JSON block wrapped in <<<BOOKING>>>:
   <<<BOOKING>>>
   {
-    "customer_name": "Name",
-    "phone": "Phone",
-    "service_type": "Service",
-    "start_time": "YYYY-MM-DDTHH:mm:ss+08:00",
-    "store_name": "Store Name"
+    "customer_name": "...",
+    "phone": "...",
+    "service_type": "...",
+    "start_time": "2024-XX-XXTHH:MM:00+08:00",
+    "store_name": "..."
   }
   <<<BOOKING>>>
   
-  IMPORTANT TIMEZONE: Always use +08:00 offset.
+  Otherwise, reply naturally to help the user.
   `;
 
   return basePrompt + bookingInstruction;
@@ -163,68 +165,60 @@ async function processEvents(events: any[]): Promise<void> {
     const replyToken = event.replyToken;
     const userId = event.source?.userId;
 
-    // Handle LOCATION message
+    // 1. Handle LOCATION
     if (event.type === "message" && event.message?.type === "location") {
       const userLat = event.message.latitude;
       const userLng = event.message.longitude;
-      console.log(`Received location from ${userId}: ${userLat}, ${userLng}`);
-
-      try {
-        // Find nearest store
-        const { data: stores } = await supabase.from('stores').select('*').eq('is_active', true);
-
-        if (!stores || stores.length === 0) {
-          await replyMessage(replyToken, "抱歉，目前沒有可用的店家資訊。");
-          return;
-        }
-
-        let nearestStore = stores[0];
-        let minDistance = calculateDistance(userLat, userLng, stores[0].lat, stores[0].lng);
-
-        stores.forEach((store: any) => {
-          const dist = calculateDistance(userLat, userLng, store.lat, store.lng);
-          if (dist < minDistance) {
-            minDistance = dist;
-            nearestStore = store;
-          }
-        });
-
-        const distanceKm = minDistance.toFixed(2);
-        const responseText = `📍 您最近的店家是：\n\n**${nearestStore.name}**\n📌 ${nearestStore.address}\n🚗 距離約 ${distanceKm} 公里\n\n請問要幫您預約這家店嗎？`;
-
-        await replyMessage(replyToken, responseText);
-
-        // Save to chat history so AI knows the context
-        if (userId) {
-          await supabase.from('chat_history').insert([
-            { user_id: userId, role: 'user', content: `[LOCATION: ${userLat}, ${userLng}]` },
-            { user_id: userId, role: 'assistant', content: `找到最近店家: ${nearestStore.name} (${nearestStore.address}), 距離 ${distanceKm} 公里` }
-          ]);
-        }
-      } catch (err) {
-        console.error("Location processing error:", err);
-        await replyMessage(replyToken, "處理位置時發生錯誤，請稍後再試。");
+      
+      const { data: stores } = await supabase.from('stores').select('*').eq('is_active', true);
+      
+      if (!stores || stores.length === 0) {
+        await replyMessage(replyToken, "抱歉，目前沒有營業中的店家。");
+        continue;
       }
+
+      let nearest = stores[0];
+      let minDist = 99999;
+
+      stores.forEach((store: any) => {
+        const d = calculateDistance(userLat, userLng, store.lat, store.lng);
+        if (d < minDist) {
+          minDist = d;
+          nearest = store;
+        }
+      });
+
+      const msg = `📍 離您最近的是：\n${nearest.name}\n${nearest.address}\n(距離 ${minDist.toFixed(1)} km)\n\n要幫您預約這家嗎？`;
+      
+      // Save context so AI knows about this location
+      if (userId) {
+        await supabase.from('chat_history').insert([
+          { user_id: userId, role: 'user', content: `[User Location: ${userLat}, ${userLng}]` },
+          { user_id: userId, role: 'assistant', content: `System: Nearest store is ${nearest.name}` }
+        ]);
+      }
+      
+      await replyMessage(replyToken, msg);
       continue;
     }
 
-    // Handle TEXT message
+    // 2. Handle TEXT
     if (event.type === "message" && event.message?.type === "text") {
       const userMessage = event.message.text;
-      console.log(`Processing text from ${userId}:`, userMessage);
-
+      
       try {
         const systemPrompt = await getSystemPrompt();
-
-        let historyMessages: { role: string; content: string }[] = [];
+        
+        // Load History
+        let historyMessages: any[] = [];
         if (userId) {
           const { data: history } = await supabase
             .from('chat_history')
             .select('role, content')
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
-            .limit(10);
-
+            .limit(6);
+            
           if (history) {
             historyMessages = history.reverse().map(h => ({
               role: h.role === 'user' ? 'user' : 'assistant',
@@ -235,90 +229,94 @@ async function processEvents(events: any[]): Promise<void> {
 
         let aiResponse = await getAIResponse(userMessage, systemPrompt, historyMessages);
 
-        // Process Booking Token
+        // Check for Booking
         const bookingRegex = /<<<BOOKING>>>([\s\S]*?)<<<BOOKING>>>/;
         const match = aiResponse.match(bookingRegex);
 
         if (match) {
           try {
-            const bookingData = JSON.parse(match[1]);
-            console.log("Booking matched:", bookingData);
+            const bookingJson = JSON.parse(match[1]);
+            console.log("Booking Attempt:", bookingJson);
 
-            const { error: insertError } = await supabase
-              .from('bookings')
-              .insert([{
-                customer_name: bookingData.customer_name,
-                phone: bookingData.phone,
-                service_type: bookingData.service_type,
-                start_time: bookingData.start_time,
+            // 🔍 Resolve Store Name to Store ID
+            const { data: storeData } = await supabase
+              .from('stores')
+              .select('id')
+              .eq('name', bookingJson.store_name)
+              .single();
+
+            if (storeData) {
+              const { error } = await supabase.from('bookings').insert([{
+                customer_name: bookingJson.customer_name,
+                phone: bookingJson.phone,
+                service_type: bookingJson.service_type,
+                start_time: bookingJson.start_time,
+                store_id: storeData.id, // ✅ Critical: Link to store
                 status: 'PENDING'
               }]);
 
-            if (insertError) {
-              console.error("Booking DB Error:", insertError);
-              aiResponse = aiResponse.replace(bookingRegex, "").trim() + "\n(系統: 預約建立失敗)";
+              if (!error) {
+                aiResponse = `✅ 預約成功！\n\n店家：${bookingJson.store_name}\n時間：${new Date(bookingJson.start_time).toLocaleString('zh-TW')}\n項目：${bookingJson.service_type}\n\n店家確認後會發送通知給您。`;
+              } else {
+                console.error("DB Insert Error", error);
+                aiResponse = "抱歉，系統建立訂單時發生錯誤，請稍後再試。";
+              }
             } else {
-              aiResponse = aiResponse.replace(bookingRegex, "").trim();
+              aiResponse = `找不到店家 "${bookingJson.store_name}"，請確認店名是否正確。`;
             }
+
           } catch (e) {
-            console.error("JSON Parse Error:", e);
-            aiResponse = aiResponse.replace(bookingRegex, "").trim();
+            console.error("Booking Parse Error", e);
+            aiResponse = "預約資料格式有誤，請人工確認。";
           }
         }
 
-        await replyMessage(replyToken, aiResponse);
+        // Clean up internal tags before sending
+        const cleanResponse = aiResponse.replace(bookingRegex, "").trim();
+        if (cleanResponse) {
+            await replyMessage(replyToken, cleanResponse);
+        }
 
+        // Save Chat
         if (userId) {
           await supabase.from('chat_history').insert([
             { user_id: userId, role: 'user', content: userMessage },
-            { user_id: userId, role: 'assistant', content: aiResponse }
+            { user_id: userId, role: 'assistant', content: cleanResponse }
           ]);
         }
 
       } catch (err) {
-        console.error("Error:", err);
-        await replyMessage(replyToken, `Error: ${err instanceof Error ? err.message : String(err)}`);
+        console.error("Error processing text:", err);
+        await replyMessage(replyToken, "系統忙碌中，請稍後再試。");
       }
     }
   }
 }
 
 serve(async (req) => {
+  // Health Check
+  if (req.method === "GET") return new Response("LINE Bot is Active", { status: 200 });
   if (req.method === "OPTIONS") return new Response(null, { status: 200 });
 
   try {
     const signature = req.headers.get("x-line-signature");
     const body = await req.text();
 
-    // SECURITY FIX: Reject requests without valid signature
-    if (!signature) {
-      console.error("Missing x-line-signature header");
-      return new Response("Unauthorized: Missing signature", { status: 401 });
+    if (!signature || !(await validateSignature(body, signature))) {
+      return new Response("Unauthorized", { status: 401 });
     }
 
-    const isValid = await validateSignature(body, signature);
-    if (!isValid) {
-      console.error("Invalid signature - rejecting request");
-      return new Response("Unauthorized: Invalid signature", { status: 401 });
-    }
-
-    let events: any[] = [];
-    try { events = JSON.parse(body).events || []; } catch { }
-
-    const processingPromise = processEvents(events);
-
+    const json = JSON.parse(body);
+    const events = json.events || [];
+    
+    // Non-blocking processing (Edge Runtime compatible)
+    const p = processEvents(events);
     // @ts-ignore
-    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
-      // @ts-ignore
-      EdgeRuntime.waitUntil(processingPromise);
-    } else {
-      processingPromise.catch(console.error);
-    }
+    if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(p);
+    else p.catch(console.error);
 
     return new Response("OK", { status: 200 });
-
   } catch (err) {
-    console.error("Request error:", err);
-    return new Response("Internal Server Error", { status: 500 });
+    return new Response(`Error: ${err}`, { status: 500 });
   }
 });
