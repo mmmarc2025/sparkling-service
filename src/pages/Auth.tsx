@@ -17,7 +17,7 @@ const Auth = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
-  const [session, setSession] = useState<Session | null>(null);
+  const [, setSession] = useState<Session | null>(null);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
