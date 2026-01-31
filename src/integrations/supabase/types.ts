@@ -23,6 +23,7 @@ export type Database = {
           service_type: string
           start_time: string
           status: string
+          store_id: number | null
         }
         Insert: {
           created_at?: string
@@ -32,6 +33,7 @@ export type Database = {
           service_type: string
           start_time: string
           status?: string
+          store_id?: number | null
         }
         Update: {
           created_at?: string
@@ -41,8 +43,17 @@ export type Database = {
           service_type?: string
           start_time?: string
           status?: string
+          store_id?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bookings_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chat_history: {
         Row: {
@@ -80,6 +91,7 @@ export type Database = {
           price_large: string | null
           price_medium: string | null
           price_small: string | null
+          store_id: number | null
         }
         Insert: {
           category: string
@@ -92,6 +104,7 @@ export type Database = {
           price_large?: string | null
           price_medium?: string | null
           price_small?: string | null
+          store_id?: number | null
         }
         Update: {
           category?: string
@@ -104,8 +117,17 @@ export type Database = {
           price_large?: string | null
           price_medium?: string | null
           price_small?: string | null
+          store_id?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "services_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stores: {
         Row: {
