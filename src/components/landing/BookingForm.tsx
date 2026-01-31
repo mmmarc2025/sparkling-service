@@ -1,34 +1,31 @@
+
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, Clock, User, Phone, Car, CheckCircle, Loader2 } from "lucide-react";
+import { Calendar, Clock, User, Phone, Car, CheckCircle, Loader2, ChevronRight, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://kiekwhkebemrfsekfbwf.supabase.co';
 const PENDING_BOOKING_KEY = 'pending_booking';
 
 const services = [
-  { value: "basic", label: "基本洗車", price: 500 },
-  { value: "premium", label: "精緻美容", price: 1500 },
-  { value: "ceramic", label: "鍍膜服務", price: 6000 },
+  { value: "basic", label: "基本洗車", price: 500, desc: "泡沫清洗 + 內裝簡易吸塵" },
+  { value: "premium", label: "精緻美容", price: 1500, desc: "深層去汙 + 手工打蠟 + 皮革保養" },
+  { value: "ceramic", label: "頂級鍍膜", price: 6000, desc: "全車拋光 + 雙層鍍膜防護" },
 ];
 
 const BookingForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -37,292 +34,275 @@ const BookingForm = () => {
     service: "",
   });
 
-  // Check for pending booking on mount (after login callback)
+  // Check for pending booking
   useEffect(() => {
     const checkPendingBooking = async () => {
       const pending = localStorage.getItem(PENDING_BOOKING_KEY);
       if (pending) {
         const bookingData = JSON.parse(pending);
         localStorage.removeItem(PENDING_BOOKING_KEY);
-
-        // Check if user is now logged in
         const token = localStorage.getItem('carwash_auth_token');
         if (token) {
-          // Submit the pending booking
           try {
             setIsLoading(true);
             const startTime = new Date(`${bookingData.date}T${bookingData.time}`);
-
             const { error } = await supabase.from("bookings").insert({
               customer_name: bookingData.name.trim(),
               phone: bookingData.phone.trim(),
               service_type: bookingData.service,
               start_time: startTime.toISOString(),
             });
-
             if (error) throw error;
-
             setIsSuccess(true);
-            toast({
-              title: "預約成功！",
-              description: "我們將盡快與您聯繫確認預約詳情。",
-            });
-            setTimeout(() => setIsSuccess(false), 3000);
+            toast({ title: "預約成功！", description: "我們將盡快與您聯繫。" });
           } catch (error) {
-            console.error("Pending booking error:", error);
-            toast({
-              title: "預約失敗",
-              description: "請重新填寫預約表單",
-              variant: "destructive",
-            });
+            console.error("Pending error:", error);
+            toast({ title: "預約失敗", variant: "destructive" });
           } finally {
             setIsLoading(false);
           }
         }
       }
     };
-
     checkPendingBooking();
   }, [toast]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.name || !formData.phone || !formData.date || !formData.time || !formData.service) {
-      toast({
-        title: "資料不完整",
-        description: "請填寫所有欄位",
-        variant: "destructive",
-      });
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.phone) {
+      toast({ title: "請填寫完整資料", variant: "destructive" });
       return;
     }
 
-    // Check if user is logged in
     const token = localStorage.getItem('carwash_auth_token');
-
     if (!token) {
-      // Save booking data to localStorage and redirect to login
       localStorage.setItem(PENDING_BOOKING_KEY, JSON.stringify(formData));
-      toast({
-        title: "請先登入",
-        description: "完成登入後將自動完成預約",
-      });
-      // Redirect to LINE login
+      toast({ title: "請先登入", description: "登入後將自動完成預約" });
       window.location.href = `${SUPABASE_URL}/functions/v1/line-auth/login`;
       return;
     }
 
     setIsLoading(true);
-
     try {
       const startTime = new Date(`${formData.date}T${formData.time}`);
-
       const { error } = await supabase.from("bookings").insert({
         customer_name: formData.name.trim(),
         phone: formData.phone.trim(),
         service_type: formData.service,
         start_time: startTime.toISOString(),
       });
-
       if (error) throw error;
-
       setIsSuccess(true);
-      setFormData({ name: "", phone: "", date: "", time: "", service: "" });
-
-      setTimeout(() => setIsSuccess(false), 3000);
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Booking error:", error);
-      }
-      toast({
-        title: "預約失敗",
-        description: "請稍後再試",
-        variant: "destructive",
-      });
+      toast({ title: "預約失敗", description: "請稍後再試", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const selectedService = services.find(s => s.value === formData.service);
+  const nextStep = () => {
+    if (step === 1 && !formData.service) return toast({ title: "請選擇服務" });
+    if (step === 2 && (!formData.date || !formData.time)) return toast({ title: "請選擇時間" });
+    setStep(s => s + 1);
+  };
+
+  const prevStep = () => setStep(s => s - 1);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.2 }}
-      className="glass-card p-6 md:p-8 w-full max-w-md"
-    >
-      <AnimatePresence mode="wait">
-        {isSuccess ? (
-          <motion.div
-            key="success"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="flex flex-col items-center justify-center py-12 text-center"
-          >
+    <div className="glass-card w-full max-w-md overflow-hidden relative min-h-[500px] flex flex-col">
+      {/* Progress Bar */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-white/5">
+        <motion.div 
+          className="h-full bg-primary"
+          initial={{ width: "0%" }}
+          animate={{ width: `${(step / 3) * 100}%` }}
+        />
+      </div>
+
+      <div className="p-6 md:p-8 flex-1 flex flex-col">
+        <AnimatePresence mode="wait">
+          {isSuccess ? (
             <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
-              className="w-20 h-20 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center mb-4"
+              key="success"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex-1 flex flex-col items-center justify-center text-center py-8"
             >
-              <CheckCircle className="w-10 h-10 text-white" />
+              <div className="w-20 h-20 rounded-full bg-green-500/20 flex items-center justify-center mb-6">
+                <CheckCircle className="w-10 h-10 text-green-500" />
+              </div>
+              <h3 className="text-2xl font-bold mb-2">預約成功！</h3>
+              <p className="text-muted-foreground mb-8">我們已收到您的請求，專人將儘快聯繫。</p>
+              <Button onClick={() => navigate('/my-bookings')} className="w-full">
+                查看我的預約
+              </Button>
             </motion.div>
-            <h3 className="font-heading text-2xl font-bold mb-2">預約成功！</h3>
-            <p className="text-muted-foreground">我們將盡快與您聯繫確認預約詳情。</p>
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() => navigate('/my-bookings')}
-            >
-              查看我的預約
-            </Button>
-          </motion.div>
-        ) : (
-          <motion.form
-            key="form"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onSubmit={handleSubmit}
-            className="space-y-5"
-          >
-            <div className="text-center mb-6">
-              <h3 className="font-heading text-2xl font-bold mb-1">線上預約</h3>
-              <p className="text-muted-foreground text-sm">60 秒快速預約</p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="name" className="text-sm font-medium">
-                姓名
-              </Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="name"
-                  placeholder="王小明"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="pl-10 h-12 bg-white/5 border-white/10 focus:border-primary"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phone" className="text-sm font-medium">
-                電話號碼
-              </Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="0912-345-678"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="pl-10 h-12 bg-white/5 border-white/10 focus:border-primary"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="date" className="text-sm font-medium">
-                  日期
-                </Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="date"
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="pl-10 h-12 bg-white/5 border-white/10 focus:border-primary"
-                    min={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="time" className="text-sm font-medium">
-                  時間
-                </Label>
-                <div className="relative">
-                  <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    id="time"
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    className="pl-10 h-12 bg-white/5 border-white/10 focus:border-primary"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="service" className="text-sm font-medium">
-                服務項目
-              </Label>
-              <Select
-                value={formData.service}
-                onValueChange={(value) => setFormData({ ...formData, service: value })}
-              >
-                <SelectTrigger className="h-12 bg-white/5 border-white/10 focus:border-primary">
-                  <div className="flex items-center gap-2">
-                    <Car className="w-4 h-4 text-muted-foreground" />
-                    <SelectValue placeholder="請選擇服務" />
+          ) : (
+            <>
+              {/* Step 1: Service Selection */}
+              {step === 1 && (
+                <motion.div
+                  key="step1"
+                  initial={{ x: 20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -20, opacity: 0 }}
+                  className="space-y-6 flex-1"
+                >
+                  <div className="text-center mb-8">
+                    <h3 className="text-2xl font-bold">選擇服務</h3>
+                    <p className="text-sm text-muted-foreground">您想要哪種等級的護理？</p>
                   </div>
-                </SelectTrigger>
-                <SelectContent className="glass border-white/10">
-                  {services.map((service) => (
-                    <SelectItem key={service.value} value={service.value}>
-                      <span className="flex items-center justify-between w-full gap-4">
-                        <span>{service.label}</span>
-                        <span className="text-primary font-semibold">NT${service.price}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {selectedService && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="p-4 rounded-xl bg-primary/10 border border-primary/20"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">總計</span>
-                  <span className="text-2xl font-heading font-bold text-primary">
-                    NT${selectedService.price}
-                  </span>
-                </div>
-              </motion.div>
-            )}
-
-            <Button
-              type="submit"
-              size="lg"
-              className="w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  處理中...
-                </>
-              ) : (
-                "確認預約"
+                  <div className="space-y-3">
+                    {services.map((s) => (
+                      <div
+                        key={s.value}
+                        onClick={() => setFormData({ ...formData, service: s.value })}
+                        className={cn(
+                          "p-4 rounded-xl border cursor-pointer transition-all hover:bg-white/5",
+                          formData.service === s.value 
+                            ? "border-primary bg-primary/5 ring-1 ring-primary" 
+                            : "border-white/10"
+                        )}
+                      >
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="font-semibold">{s.label}</span>
+                          <span className="text-primary font-bold">NT${s.price}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{s.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
               )}
-            </Button>
-          </motion.form>
+
+              {/* Step 2: Date & Time */}
+              {step === 2 && (
+                <motion.div
+                  key="step2"
+                  initial={{ x: 20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -20, opacity: 0 }}
+                  className="space-y-6 flex-1"
+                >
+                  <div className="text-center mb-8">
+                    <h3 className="text-2xl font-bold">預約時間</h3>
+                    <p className="text-sm text-muted-foreground">選擇您方便的時段</p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>日期</Label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          type="date"
+                          value={formData.date}
+                          onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                          className="pl-10 h-12"
+                          min={new Date().toISOString().split('T')[0]}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>時間</Label>
+                      <div className="relative">
+                        <Clock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          type="time"
+                          value={formData.time}
+                          onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                          className="pl-10 h-12"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Step 3: Contact Info */}
+              {step === 3 && (
+                <motion.div
+                  key="step3"
+                  initial={{ x: 20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -20, opacity: 0 }}
+                  className="space-y-6 flex-1"
+                >
+                  <div className="text-center mb-8">
+                    <h3 className="text-2xl font-bold">聯絡資料</h3>
+                    <p className="text-sm text-muted-foreground">最後一步囉！</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>姓名</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="您的稱呼"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          className="pl-10 h-12"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>電話</Label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          type="tel"
+                          placeholder="09xx-xxx-xxx"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          className="pl-10 h-12"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Summary Card */}
+                  <div className="mt-6 p-4 rounded-xl bg-white/5 border border-white/10 text-sm space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">服務</span>
+                      <span>{services.find(s => s.value === formData.service)?.label}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">時間</span>
+                      <span>{formData.date} {formData.time}</span>
+                    </div>
+                    <div className="border-t border-white/10 my-2 pt-2 flex justify-between font-bold">
+                      <span>總計</span>
+                      <span className="text-primary">NT${services.find(s => s.value === formData.service)?.price}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Navigation Buttons */}
+        {!isSuccess && (
+          <div className="flex gap-3 mt-8 pt-4 border-t border-white/5">
+            {step > 1 && (
+              <Button variant="outline" onClick={prevStep} className="flex-1">
+                <ChevronLeft className="w-4 h-4 mr-1" /> 上一步
+              </Button>
+            )}
+            
+            {step < 3 ? (
+              <Button onClick={nextStep} className="flex-1 ml-auto">
+                下一步 <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            ) : (
+              <Button onClick={handleSubmit} disabled={isLoading} className="flex-1 ml-auto bg-primary hover:bg-primary/90">
+                {isLoading ? <Loader2 className="animate-spin w-4 h-4" /> : "確認預約"}
+              </Button>
+            )}
+          </div>
         )}
-      </AnimatePresence>
-    </motion.div>
+      </div>
+    </div>
   );
 };
 
