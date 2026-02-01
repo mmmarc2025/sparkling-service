@@ -63,7 +63,7 @@ async function getAIResponse(userMessage: string, systemPrompt: string, history:
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.0-flash-exp", 
+      model: "google/gemini-3-flash-preview", 
       messages: messages,
       max_tokens: 500,
       temperature: 0.5, 
