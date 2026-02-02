@@ -39,7 +39,7 @@ const Header = () => {
               ))}
               <Link to="/admin">
                 <Button variant="outline" size="sm">
-                  管理後台
+                  登入
                 </Button>
               </Link>
             </nav>
@@ -82,7 +82,7 @@ const Header = () => {
                 className="px-4 py-3 rounded-xl text-sm font-medium text-primary hover:bg-primary/10 transition-colors touch-target"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                管理後台
+                登入
               </Link>
             </nav>
           </motion.div>
