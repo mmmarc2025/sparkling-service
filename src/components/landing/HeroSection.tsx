@@ -77,9 +77,6 @@ const HeroSection = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 mb-10 leading-relaxed"
             >
-              不只是美容，這是一場關於愛的呵護。
-              <br className="hidden md:block" />
-              提供最貼心的到府服務，為您的毛孩提供最專業的精緻護理。
             </motion.p>
 
             {/* Stats / Trust Badges */}
