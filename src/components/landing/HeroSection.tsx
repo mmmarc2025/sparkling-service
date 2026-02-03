@@ -64,10 +64,10 @@ const HeroSection = () => {
               transition={{ duration: 0.6, delay: 0.1 }}
               className="font-heading text-4xl sm:text-5xl md:text-6xl font-bold leading-tight mb-6 text-white"
             >
-              洗車吧
+              毛寵管家
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">
-                汽車美容預約服務
+                你最溫柔的夥伴
               </span>
             </motion.h1>
 
@@ -77,9 +77,9 @@ const HeroSection = () => {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="text-lg text-gray-400 max-w-xl mx-auto lg:mx-0 mb-10 leading-relaxed"
             >
-              不只是洗車，這是一場關於細節的儀式。
+              不只是美容，這是一場關於愛的呵護。
               <br className="hidden md:block" />
-              使用頂級藥水與純水工藝，為您的愛車提供最溫柔的深層護理。
+              提供最貼心的到府服務，為您的毛孩提供最專業的精緻護理。
             </motion.p>
 
             {/* Stats / Trust Badges */}
