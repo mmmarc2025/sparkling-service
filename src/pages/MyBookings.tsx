@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://kiekwhkebemrfsekfbwf.supabase.co';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://yzkjyiugkkuqycxitfst.supabase.co';
 const TOKEN_KEY = 'carwash_auth_token';
 
 interface Booking {

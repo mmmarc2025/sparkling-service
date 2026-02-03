@@ -22,7 +22,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://kiekwhkebemrfsekfbwf.supabase.co';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://yzkjyiugkkuqycxitfst.supabase.co';
 const TOKEN_KEY = 'carwash_auth_token';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
