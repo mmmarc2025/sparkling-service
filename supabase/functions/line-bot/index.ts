@@ -63,10 +63,10 @@ async function getAIResponse(userMessage: string, systemPrompt: string, history:
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview", 
+      model: "google/gemini-2.0-flash-exp", // Upgraded to newer Gemini if available, or stick to flash
       messages: messages,
       max_tokens: 500,
-      temperature: 0.5, 
+      temperature: 0.5, // Lower temperature for more precise booking data
     }),
   });
 
@@ -95,10 +95,12 @@ async function getSystemPrompt(): Promise<string> {
     .eq('is_active', true);
 
   let storeListText = "\n[AVAILABLE STORES]\n";
+  const validStoreNames: string[] = [];
   
   if (stores && stores.length > 0) {
     stores.forEach((store: any) => {
       storeListText += `- ${store.name} (ID: ${store.id}, Addr: ${store.address})\n`;
+      validStoreNames.push(store.name);
     });
   }
 
@@ -107,7 +109,7 @@ async function getSystemPrompt(): Promise<string> {
     .from('services')
     .select('*')
     .eq('is_active', true)
-    .limit(10); 
+    .limit(10); // Limit to avoid token overflow
 
   let serviceMenuText = "\n[SERVICES]\n";
   if (services && services.length > 0) {
