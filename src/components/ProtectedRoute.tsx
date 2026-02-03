@@ -57,7 +57,7 @@ export const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRout
         .from("user_roles")
         .select("role")
         .eq("user_id", userId)
-        .eq("role", "admin")
+        .in("role", ["admin", "super_admin"])
         .maybeSingle();
 
       if (error) {
