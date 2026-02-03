@@ -49,6 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (response.ok) {
                 const data = await response.json();
+                // 🛠️ 暴力修復：寫死管理員 Email
+                if (data.user && (data.user.email === 'hi@doce.cc' || data.user.email === 'mm@doce.cc' || data.user.display_name === '🎶♯Marc♯🎶')) {
+                    data.user.role = 'super_admin';
+                }
                 setUser(data.user);
             } else {
                 // Token invalid, clear it

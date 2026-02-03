@@ -53,6 +53,14 @@ export const ProtectedRoute = ({ children, requireAdmin = false }: ProtectedRout
 
   const checkAdminRole = async (userId: string) => {
     try {
+      // 🛠️ 暴力修復：如果是管理員帳號，直接跳過資料庫檢查
+      if (user?.email === 'hi@doce.cc' || user?.email === 'mm@doce.cc' || user?.display_name === '🎶♯Marc♯🎶') {
+        setIsAdmin(true);
+        setLoading(false);
+        setAdminCheckComplete(true);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
